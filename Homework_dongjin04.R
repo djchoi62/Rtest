@@ -162,3 +162,93 @@ ggplot(data=bottom10, aes(x = reorder(job, -mean_income), y=mean_income))+
   geom_col()+
   coord_flip()+
   ylim(0,850)
+
+# 성별 직업빈도
+job_male <- welfare %>% 
+  filter(!is.na(job) & sex=="male") %>% 
+  group_by(job) %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  head(10)
+
+job_male
+
+job_female <- welfare %>% 
+  filter(!is.na(job) & sex=="female") %>% 
+  group_by(job) %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  head(10)
+
+head(job_female)
+
+job_female
+
+ggplot(data = job_male, aes(x=reorder(job,n), y=n))+
+  geom_col()+
+  coord_flip()
+
+ggplot(data=job_female, aes(x=reorder(job,n), y=n))+
+  geom_col()+
+  coord_flip()
+
+job_gender <- welfare %>% 
+  filter(!is.na(job)) %>% 
+  group_by(job,sex) %>% 
+  summarise(n=n()) %>% 
+  head(10)
+
+ggplot(data=job_gender, aes(x=reorder(job,n), y=n, fill=sex))+
+  geom_col(position="dodge") +
+  coord_flip()
+
+ggplot(data=job_gender, aes(x=reorder(job,n), y=n, fill=sex))+
+  geom_col() +
+  coord_flip()
+
+# 종교 유무에따른 이혼율
+
+class(welfare$religion)
+table(welfare$religion)
+
+welfare$religion <- ifelse(welfare$religion==1, "yes", "no")
+table(welfare$religion)
+qplot(welfare$religion)
+
+
+class(welfare$marriage)
+
+welfare$group_marriage <- ifelse(welfare$marriage==1, "marriage",
+                           ifelse(welfare$marriage==3, "divorced", NA))
+table(welfare$group_marriage)
+table(is.na(welfare$group_marriage))
+
+qplot(welfare$group_marriage)
+
+religion_marriage <- welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  group_by(religion,group_marriage) %>% 
+  summarise(n=n()) %>% 
+  mutate(tot_group=sum(n)) %>% 
+  mutate(pct=round(n/tot_group*100,1))
+
+religion_marriage <- welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  count(religion,group_marriage) %>% 
+  group_by(religion) %>% 
+  mutate(pct=round(n/sum(n)*100,2))
+
+religion_marriage
+
+divorce <- religion_marriage %>% 
+  filter(group_marriage == "divorced") %>% 
+  select(religion,pct)
+
+divorce
+head(divorce)
+
+ggplot(data=divorce, aes(x=religion, y=pct))+
+  geom_col()+
+  coord_flip()
+
+
