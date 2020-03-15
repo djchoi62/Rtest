@@ -162,3 +162,205 @@ ggplot(data=bottom10, aes(x = reorder(job, -mean_income), y=mean_income))+
   geom_col()+
   coord_flip()+
   ylim(0,850)
+
+# 성별 직업빈도
+job_male <- welfare %>% 
+  filter(!is.na(job) & sex=="male") %>% 
+  group_by(job) %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  head(10)
+
+job_male
+
+job_female <- welfare %>% 
+  filter(!is.na(job) & sex=="female") %>% 
+  group_by(job) %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  head(10)
+
+head(job_female)
+
+job_female
+
+ggplot(data = job_male, aes(x=reorder(job,n), y=n))+
+  geom_col()+
+  coord_flip()
+
+ggplot(data=job_female, aes(x=reorder(job,n), y=n))+
+  geom_col()+
+  coord_flip()
+
+job_gender <- welfare %>% 
+  filter(!is.na(job)) %>% 
+  group_by(job,sex) %>% 
+  summarise(n=n()) %>% 
+  head(10)
+
+ggplot(data=job_gender, aes(x=reorder(job,n), y=n, fill=sex))+
+  geom_col(position="dodge") +
+  coord_flip()
+
+ggplot(data=job_gender, aes(x=reorder(job,n), y=n, fill=sex))+
+  geom_col() +
+  coord_flip()
+
+# 종교 유무에따른 이혼율
+
+class(welfare$religion)
+table(welfare$religion)
+
+welfare$religion <- ifelse(welfare$religion==1, "yes", "no")
+table(welfare$religion)
+qplot(welfare$religion)
+
+
+class(welfare$marriage)
+
+welfare$group_marriage <- ifelse(welfare$marriage==1, "marriage",
+                           ifelse(welfare$marriage==3, "divorced", NA))
+table(welfare$group_marriage)
+table(is.na(welfare$group_marriage))
+
+qplot(welfare$group_marriage)
+
+religion_marriage <- welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  group_by(religion,group_marriage) %>% 
+  summarise(n=n()) %>% 
+  mutate(tot_group=sum(n)) %>% 
+  mutate(pct=round(n/tot_group*100,1))
+
+religion_marriage <- welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  count(religion,group_marriage) %>% 
+  group_by(religion) %>% 
+  mutate(pct=round(n/sum(n)*100,2))
+
+religion_marriage
+
+divorce <- religion_marriage %>% 
+  filter(group_marriage == "divorced") %>% 
+  select(religion,pct)
+
+divorce
+head(divorce)
+
+ggplot(data=divorce, aes(x=religion, y=pct))+
+  geom_col()+
+  coord_flip()
+
+ageg_marriage <-  welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  group_by(ageg,group_marriage) %>% 
+  summarise(n=n()) %>% 
+  mutate(tot_group=sum(n)) %>% 
+  mutate(pct=round(n/tot_group*100,1))
+
+welfare %>% 
+  filter(!is.na(group_marriage)) %>% 
+  count(ageg,group_marriage) %>% 
+  group_by(ageg) %>% 
+  mutate(pct=round(n/sum(n)*100,2))
+
+ageg_divorce <- ageg_marriage %>% 
+  filter(ageg != "young" & group_marriage=="divorced") %>% 
+  select(ageg,pct)
+
+ggplot(data = ageg_divorce, aes(x=ageg, y=pct))+
+  geom_col()+
+  coord_flip()
+  
+ageg_religion_marriage <- welfare %>% 
+  filter(!is.na(group_marriage) & ageg!="young") %>% 
+  group_by(ageg, religion, group_marriage) %>% 
+  summarise(n=n()) %>% 
+  mutate(tot_group=sum(n)) %>% 
+  mutate(pct=round(n/tot_group*100,2))
+ageg_religion_marriage
+
+welfare %>% 
+  filter(!is.na(group_marriage) & ageg !="young") %>% 
+  count(ageg, religion, group_marriage) %>% 
+  group_by(ageg, religion) %>% 
+  mutate(pct = round(n/sum(n)*100,1))
+
+# ageg_religion_marriage <- welfare %>% 
+#   filter(!is.na(group_marriage) & ageg!="young") %>% 
+#   group_by(ageg, religion, group_marriage) %>% 
+#   summarise(n=n(), tot_group=sum(n), pct=round(n/tot_group*100,2))
+
+df_divorce <- ageg_religion_marriage %>% 
+  filter(group_marriage=="divorced") %>% 
+  select(ageg,religion,pct)
+
+df_divorce
+
+ggplot(data=df_divorce, aes(x=ageg, y=pct, fill=religion))+
+  geom_col(position="dodge")
+
+# 지역별 연령대 비율
+
+class(welfare$code_region)
+table(welfare$code_region)
+list_region <- data.frame(code_region=c(1:7),
+                          region=c("Seoul",
+                                  "CapitalRegion",
+                                  "PKRegion",
+                                  "TKRegion",
+                                  "ChungNamDajeon",
+                                  "GangwonChungBook",
+                                  "HonamJeju"))
+list_region
+
+welfare <- left_join(welfare, list_region, id="code_region")
+
+welfare %>% 
+  select(code_region, region) %>% 
+  head
+
+region_ageg <- welfare %>% 
+  group_by(region,ageg) %>% 
+  summarise(n=n()) %>% 
+  mutate(tot_group = sum(n)) %>% 
+  mutate(pct = round(n/tot_group*100,3))
+
+head(region_ageg)
+
+region_ageg <- welfare %>% 
+  count(region, ageg) %>% 
+  group_by(region) %>% 
+  mutate(pct = round(n/sum(n)*100,4))
+
+ggplot(data = region_ageg, aes(x = region, y=pct, fill=ageg)) +
+  geom_col()+
+  coord_flip()
+  
+list_order_old <- region_ageg %>% 
+  filter(ageg=="old") %>% 
+  arrange(pct)
+
+list_order_old
+
+order <- list_order_old$region
+order
+
+ggplot(data = region_ageg, aes(x = region, y=pct, fill=ageg)) +
+  geom_col()+
+  coord_flip()+
+  scale_x_discrete(limits = order)
+
+class(region_ageg$ageg)
+
+levels(region_ageg$ageg)
+
+region_ageg$ageg <- factor(region_ageg$ageg,
+                           level = c("old", "middle", "young"))
+class(region_ageg$ageg)
+levels(region_ageg$ageg)
+
+ggplot(data = region_ageg, aes(x = region, y=pct, fill=ageg)) +
+  geom_col()+
+  coord_flip()+
+  scale_x_discrete(limits = order)
